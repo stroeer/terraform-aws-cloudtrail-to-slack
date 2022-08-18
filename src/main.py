@@ -25,9 +25,15 @@ from datetime import datetime
 
 from rules import default_rules
 
+import boto3
+from botocore.exceptions import ClientError
+
+sqs = boto3.resource('sqs')
 
 # Slack web hook example
 # https://hooks.slack.com/services/XXXXXXX/XXXXXXX/XXXXXXXXXX
+
+
 def post_slack_message(hook_url, message):
     # print(f'Sending message: {json.dumps(message)}')
     headers = {'Content-type': 'application/json'}
@@ -39,6 +45,34 @@ def post_slack_message(hook_url, message):
     response = connection.getresponse()
     # print('Response: {}, message: {}'.format(response.status, response.read().decode()))
     return response.status
+
+
+def send_sqs_message(sqs_name, owner_account_id, message_body):
+    try:
+        queue = get_queue(sqs_name, owner_account_id)
+        response = queue.send_message(
+            MessageBody=message_body,
+            MessageAttributes={}
+        )
+    except ClientError as error:
+        print(f'Send message failed: %s', message_body)
+        raise error
+    else:
+        return response
+
+
+def get_queue(sqs_name, owner_account_id):
+    try:
+        queue = sqs.get_queue_by_name(
+            QueueName=sqs_name,
+            QueueOwnerAWSAccountId=owner_account_id
+        )
+        print("Got queue '%s' with URL=%s", sqs_name, queue.url)
+    except ClientError as error:
+        print(f"Couldn't get queue named %s.", sqs_name)
+        raise error
+    else:
+        return queue
 
 
 def read_env_variable_or_die(env_var_name):
@@ -84,6 +118,7 @@ def get_hook_url_for_account(event, configuration, default_hook_url):
 def lambda_handler(event, context):
 
     default_hook_url = read_env_variable_or_die('HOOK_URL')
+    sns_name = os.environ.get('SNS_NAME', '')
     rules_separator = os.environ.get('RULES_SEPARATOR', ',')
     user_rules = parse_rules_from_string(os.environ.get('RULES', ''), rules_separator)
     ignore_rules = parse_rules_from_string(os.environ.get('IGNORE_RULES', ''), rules_separator)
@@ -108,7 +143,12 @@ def lambda_handler(event, context):
     records = get_cloudtrail_log_records(event)
     for record in records:
         hook_url = get_hook_url_for_account(record['event'], configuration_as_json, default_hook_url)
-        handle_event(record['event'], record['key'], rules, ignore_rules, hook_url)
+        owner_account_id = get_account_id_from_event(event)
+        if sns_name != '':
+            handle_event(record['event'], record['key'], rules,
+                         ignore_rules, hook_url, sns_name, owner_account_id)
+        else:
+            print(f'Skip the event, no sqs name in config for account {owner_account_id}')
 
     return 200
 
@@ -138,7 +178,7 @@ def should_message_be_processed(event, rules, ignore_rules):
 
 
 # Handle events
-def handle_event(event, source_file, rules, ignore_rules, hook_url):
+def handle_event(event, source_file, rules, ignore_rules, hook_url, sqs_name, owner_account_id):
     if should_message_be_processed(event, rules, ignore_rules) is not True:
         return
     # log full event if it is AccessDenied
@@ -149,6 +189,7 @@ def handle_event(event, source_file, rules, ignore_rules, hook_url):
     response = post_slack_message(hook_url, message)
     if response != 200:
         raise Exception('Failed to send message to Slack!')
+    send_sqs_message(sqs_name, owner_account_id, message)
 
 
 # Flatten json
