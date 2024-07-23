@@ -36,35 +36,43 @@ from sns import send_message_to_sns
 
 cfg = Config()
 logger = get_logger()
-slack_config = get_slack_config()
+slack_config = {}
 
 s3_client = boto3.client("s3")
 dynamodb_client = boto3.client("dynamodb")
 sns_client = boto3.client("sns")
 
+def slack_config_cached():
+    global slack_config
+    if not slack_config:
+        slack_config = get_slack_config()
+    return slack_config
 
-def lambda_handler(event, context) -> int:  # noqa: ANN001
+def lambda_handler(event, context) -> int:
+    # noqa: ANN001
     records = get_cloudtrail_log_records(event)
-    for record in records:
-        handle_event(
-            event = record["event"],
-            source_file_object_key = record['key'],
-            rules = cfg.rules,
-            ignore_rules = cfg.ignore_rules
-        )
+    try:
+        for record in records:
+            handle_event(
+                event = record["event"],
+                source_file_object_key = record['key'],
+                rules = cfg.rules,
+                ignore_rules = cfg.ignore_rules
+            )
 
     except Exception as e:
-        post_message(
-            message = message_for_slack_error_notification(e, s3_notification_event),
-            account_id = None,
-            slack_config = slack_config,
-        )
         logger.exception({"Failed to process event": e})
+        post_message(
+            message = message_for_slack_error_notification(e, event),
+            account_id = None,
+            slack_config = slack_config_cached(),
+        )
     return 200
 
 
 
 def get_cloudtrail_log_records(event) -> Dict | None:
+    records = []
     cw_data = event['awslogs']['data']
     compressed_payload = base64.b64decode(cw_data)
     uncompressed_payload = gzip.decompress(compressed_payload)
@@ -91,6 +99,7 @@ def should_message_be_processed(
     rules: List[str],
     ignore_rules: List[str],
 ) -> ProcessingResult:
+    flat_event = flatten_json(event)
     flat_event = {k: v for k, v in flat_event.items() if v is not None}
     user = event["userIdentity"]
     event_name = event["eventName"]
@@ -138,7 +147,7 @@ def handle_event(
                 rule = error["rule"],
                 ),
                 account_id = account_id,
-                slack_config = slack_config,
+                slack_config = slack_config_cached(),
             )
 
     if not result.should_be_processed:
@@ -159,14 +168,14 @@ def handle_event(
         sns_client = sns_client,
     )
 
-    if isinstance(slack_config, SlackWebhookConfig):
+    if isinstance(slack_config_cached(), SlackWebhookConfig):
         return post_message(
             message = message,
             account_id = account_id,
-            slack_config = slack_config,
+            slack_config = slack_config_cached(),
         )
 
-    if isinstance(slack_config, SlackAppConfig):
+    if isinstance(slack_config_cached(), SlackAppConfig):
         thread_ts = get_thread_ts_from_dynamodb(
             cfg = cfg,
             event = event,
@@ -179,7 +188,7 @@ def handle_event(
                 message = message,
                 account_id = account_id,
                 thread_ts = thread_ts,
-                slack_config = slack_config,
+                slack_config = slack_config_cached(),
             )
         else:
             # If we don't have a thread_ts, we need to post the message to the channel
@@ -187,7 +196,7 @@ def handle_event(
             slack_response = post_message(
                 message = message,
                 account_id = account_id,
-                slack_config = slack_config
+                slack_config = slack_config_cached()
             )
             if slack_response is not None:
                 logger.info({"Saving thread_ts to DynamoDB"})

@@ -8,7 +8,7 @@ module "lambda" {
   function_name = var.function_name
   description   = "Send CloudTrail Events to Slack"
   handler       = "main.lambda_handler"
-  runtime       = "python3.10"
+  runtime       = "python3.12"
   timeout       = var.lambda_timeout_seconds
   architectures = ["x86_64"]
   publish       = true
@@ -37,9 +37,13 @@ module "lambda" {
 
       HOOK_URL = var.default_slack_hook_url
 
+      PARAMETERS_SECRETS_EXTENSION_HTTP_PORT = "2273"
+
       CONFIG_SSM_PARAMETER_NAME          = aws_ssm_parameter.slack_config.name
       SNS_TOPIC_PATTERN                  = var.sns_topic_pattern != "" ? var.sns_topic_pattern : "arn:aws:sns:${data.aws_region.current.name}:${local.placeholder}:cloudtrail-notifications"
       SLACK_BOT_TOKEN_SSM_PARAMETER_NAME = aws_ssm_parameter.bot_token.name
+
+      CONFIG_HASH = sha1(jsonencode(var.configuration))
 
       DEFAULT_SLACK_CHANNEL_ID = try(var.default_slack_channel_id, "")
       DEFAULT_SNS_TOPIC_ARN    = try(aws_sns_topic.events_to_sns[0].arn, var.default_sns_topic_arn, "")
@@ -57,7 +61,7 @@ module "lambda" {
     var.use_default_rules ? { USE_DEFAULT_RULES = "True" } : {}
   )
   layers = [
-    "arn:aws:lambda:eu-west-1:015030872274:layer:AWS-Parameters-and-Secrets-Lambda-Extension:4"
+    "arn:aws:lambda:eu-west-1:015030872274:layer:AWS-Parameters-and-Secrets-Lambda-Extension:11"
   ]
 
   memory_size = var.lambda_memory_size
@@ -95,15 +99,25 @@ resource "aws_iam_role_policy_attachment" "ssm" {
 }
 
 resource "aws_iam_policy" "ssm" {
+  name   = "${var.function_name}-ssm"
   policy = data.aws_iam_policy_document.ssm.json
 }
 
 data "aws_iam_policy_document" "ssm" {
-
   statement {
     actions   = ["ssm:GetParameter"]
     resources = [aws_ssm_parameter.slack_config.arn, aws_ssm_parameter.bot_token.arn]
   }
+}
+
+resource "aws_iam_role_policy_attachment" "s3" {
+  policy_arn = aws_iam_policy.s3.arn
+  role       = module.lambda.lambda_role_name
+}
+
+resource "aws_iam_policy" "s3" {
+  name   = "${var.function_name}-s3"
+  policy = data.aws_iam_policy_document.s3.json
 }
 
 data "aws_iam_policy_document" "s3" {
@@ -115,7 +129,7 @@ data "aws_iam_policy_document" "s3" {
       "dynamodb:GetItem",
     ]
     resources = [
-      "arn:${data.aws_partition.current.partition}:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${var.dynamodb_table_name}"
+      module.cloudtrail_to_slack_dynamodb_table.dynamodb_table_arn
     ]
   }
   dynamic "statement" {

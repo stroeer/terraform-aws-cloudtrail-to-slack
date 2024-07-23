@@ -17,7 +17,7 @@ def post_message( # noqa: ANN201
         account_id: str | None = None,
         thread_ts: str | None = None,
 ) -> None | SlackResponse:
-
+    logger.info
     if isinstance(slack_config, SlackAppConfig):
         if account_id and slack_config.configuration:
             channel_id = next(

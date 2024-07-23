@@ -9,8 +9,8 @@
 variable "configuration" {
   description = "Allows the configuration of the Slack webhook URL per account(s). This enables the separation of events from different accounts into different channels, which is useful in the context of an AWS organization."
   type = list(object({
-    accounts       = list(string)
-    slack_hook_url = string
+    accounts         = list(string)
+    slack_channel_id = string
   }))
   default = null
 }
@@ -169,12 +169,6 @@ variable "rule_evaluation_errors_to_slack" {
   description = "If rule evaluation error occurs, send notification to slack"
   default     = true
   type        = bool
-}
-
-variable "dynamodb_table_name" {
-  description = "Name of the dynamodb table, it would not be created if slack_bot_token is not set."
-  default     = "fivexl-cloudtrail-to-slack-table"
-  type        = string
 }
 
 variable "dynamodb_time_to_live" {

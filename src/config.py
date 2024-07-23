@@ -35,8 +35,10 @@ def retrieve_extension_value(url):
 
 def get_slack_config() -> Union[SlackWebhookConfig, SlackAppConfig]:
     raw_configuration = retrieve_extension_value(('/systemsmanager/parameters/get/?name=' + os.environ.get('CONFIG_SSM_PARAMETER_NAME', 'None')))['Parameter']['Value']
-    bot_token = retrieve_extension_value(('/systemsmanager/parameters/get/?name=' + os.environ.get('SLACK_BOT_TOKEN_SSM_PARAMETER_NAME', 'None')))['Parameter']['Value']
+    bot_token = retrieve_extension_value(('/systemsmanager/parameters/get/?withDecryption=true&name=' + os.environ.get('SLACK_BOT_TOKEN_SSM_PARAMETER_NAME', 'None')))['Parameter']['Value']
 
+    logging.info(f"Retrieved Slack configuration: {raw_configuration}")
+    print(f"Retrieved Slack configuration: {raw_configuration}")
     if bot_token:
 
         default_channel_id: str | None = os.environ.get("DEFAULT_SLACK_CHANNEL_ID")

@@ -1,7 +1,7 @@
 module "cloudtrail_to_slack_dynamodb_table" {
   source  = "terraform-aws-modules/dynamodb-table/aws"
   version = "4.0.1"
-  name    = var.dynamodb_table_name
+  name    = "${var.function_name}-table"
 
   deletion_protection_enabled    = true
   server_side_encryption_enabled = true
