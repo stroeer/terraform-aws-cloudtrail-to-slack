@@ -1,0 +1,446 @@
+{
+    "test_events": [
+        {
+            "test_event_name": "console_login_without_MFA_and_SSO",
+            "event": {
+                "eventVersion": "1.05",
+                "userIdentity": {
+                    "type": "IAMUser",
+                    "principalId": "XXXXXXXXXXX",
+                    "arn": "arn:aws:iam::XXXXXXXXXXX:user/xxxxxxxx",
+                    "accountId": "XXXXXXXXXXX",
+                    "userName": "xxxxxxxx"
+                },
+                "eventTime": "2000-01-03T16:14:51Z",
+                "eventSource": "signin.amazonaws.com",
+                "eventName": "ConsoleLogin",
+                "awsRegion": "us-east-1",
+                "sourceIPAddress": "83.41.208.104",
+                "userAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:67.0) Gecko/20100101 Firefox/67.0",
+                "requestParameters": "null",
+                "responseElements": {
+                    "ConsoleLogin": "Success"
+                },
+                "additionalEventData": {
+                    "LoginTo": "https://console.aws.amazon.com/ec2/v2/home?XXXXXXXXXXX",
+                    "MobileVersion": "No",
+                    "MFAUsed": "No"
+                },
+                "eventID": "0e4d136e-25d4-4d92-b2b2-8a9fe1e3f1af",
+                "eventType": "AwsConsoleSignIn",
+                "recipientAccountId": "XXXXXXXXXXX"
+            }
+        },
+        {
+            "test_event_name": "cloudtrail_stop_logging",
+            "event": {
+                "eventVersion": "1.09",
+                "userIdentity": {
+                    "type": "AssumedRole",
+                    "principalId": "XXXXXXXXXXXXXXXXXXXXXX",
+                    "arn": "arn:aws:sts::XXXXXXXXXXX",
+                    "accountId": "XXXXXXXXXXX",
+                    "accessKeyId": "XXXXXXXXXXX",
+                    "sessionContext": {
+                        "sessionIssuer": {
+                            "type": "Role",
+                            "principalId": "XXXXXXXXXXX",
+                            "arn": "XXXXXXXXXXX",
+                            "accountId": "XXXXXXXXXXX",
+                            "userName": "XXXXXXXXXXX"
+                        }
+                    }
+                },
+                "eventTime": "2000-01-03T16:14:51Z",
+                "eventSource": "cloudtrail.amazonaws.com",
+                "eventName": "StopLogging",
+                "awsRegion": "eu-central-1",
+                "sourceIPAddress": "XXXXXXXXXXX",
+                "userAgent": "AWS Internal",
+                "requestParameters": {
+                    "name": "XXXXXXXXXXX"
+                },
+                "responseElements": "null",
+                "requestID": "XXXXXXXXXXX",
+                "eventID": "XXXXXXXXXXX",
+                "readOnly": "false",
+                "eventType": "AwsApiCall",
+                "managementEvent": "true",
+                "recipientAccountId": "XXXXXXXXXXX",
+                "eventCategory": "Management",
+                "sessionCredentialFromConsole": "true"
+            }
+        },
+        {
+            "test_event_name": "cloudtrail_update_trail",
+            "event": {
+                "eventVersion": "1.09",
+                "userIdentity": {
+                    "type": "AssumedRole",
+                    "principalId": "XXXXXXXXXXX",
+                    "arn": "XXXXXXXXXXX",
+                    "accountId": "XXXXXXXXXXX",
+                    "accessKeyId": "XXXXXXXXXXX",
+                    "sessionContext": {
+                        "sessionIssuer": {
+                            "type": "Role",
+                            "principalId": "XXXXXXXXXXX",
+                            "arn": "XXXXXXXXXXX",
+                            "accountId": "XXXXXXXXXXX",
+                            "userName": "XXXXXXXXXXX"
+                        }
+                    }
+                },
+                "eventTime": "2000-01-03T16:14:51Z",
+                "eventSource": "cloudtrail.amazonaws.com",
+                "eventName": "UpdateTrail",
+                "awsRegion": "XXXXXXXXXXX",
+                "sourceIPAddress": "XXXXXXXXXXX",
+                "userAgent": "AWS Internal",
+                "requestParameters": {},
+                "responseElements": {},
+                "requestID": "XXXXXXXXXXX",
+                "eventID": "XXXXXXXXXXX",
+                "readOnly": "false",
+                "eventType": "AwsApiCall",
+                "managementEvent": "true",
+                "recipientAccountId": "XXXXXXXXXXX",
+                "eventCategory": "Management"
+            }
+        },
+        {
+            "test_event_name": "cloudtrail_delete_trail",
+            "event": {
+                "eventVersion": "1.09",
+                "userIdentity": {
+                    "type": "AssumedRole",
+                    "principalId": "XXXXXXXXXXX",
+                    "arn": "XXXXXXXXXXX",
+                    "accountId": "XXXXXXXXXXX",
+                    "accessKeyId": "XXXXXXXXXXX",
+                    "sessionContext": {
+                        "sessionIssuer": {
+                            "type": "Role",
+                            "principalId": "XXXXXXXXXXX",
+                            "arn": "XXXXXXXXXXX",
+                            "accountId": "XXXXXXXXXXX",
+                            "userName": "XXXXXXXXXXX"
+                        }
+                    }
+                },
+                "eventTime": "2000-01-03T16:14:51Z",
+                "eventSource": "cloudtrail.amazonaws.com",
+                "eventName": "DeleteTrail",
+                "awsRegion": "XXXXXXXXXXX",
+                "sourceIPAddress": "XXXXXXXXXXX",
+                "userAgent": "AWS Internal",
+                "requestParameters": {
+                    "name": "XXXXXXXXXXX"
+                },
+                "responseElements": "null",
+                "requestID": "XXXXXXXXXXX",
+                "eventID": "XXXXXXXXXXX",
+                "readOnly": "false",
+                "eventType": "AwsApiCall",
+                "managementEvent": "true",
+                "recipientAccountId": "XXXXXXXXXXX",
+                "eventCategory": "Management",
+                "sessionCredentialFromConsole": "true"
+            }
+        },
+        {
+            "test_event_name": "non_read_action_by_root",
+            "event": {
+                "eventVersion": "1.08",
+                "userIdentity": {
+                    "type": "Root",
+                    "principalId": "XXXXXXXXXXXXXXXXXXXX",
+                    "arn": "arn:aws:iam::XXXXXXXXXXXXXXXXXXXX:root",
+                    "accountId": "XXXXXXXXXXXXXXXXXXXX",
+                    "accessKeyId": ""
+                },
+                "eventTime": "2000-01-03T16:14:51Z",
+                "eventSource": "signin.amazonaws.com",
+                "eventName": "ConsoleLogin",
+                "awsRegion": "XXXXXXXXXXXXXXXXXXXX",
+                "sourceIPAddress": "XXXXXXXXXXXXXXXXXXXX",
+                "userAgent": "XXXXXXXXXXXXXXXXXXXX",
+                "requestParameters": "null",
+                "responseElements": {
+                    "ConsoleLogin": "Success"
+                },
+                "additionalEventData": {
+                    "LoginTo": "XXXXXXXXXXXXXXXXXXXX",
+                    "MobileVersion": "No",
+                    "MFAUsed": "Yes"
+                },
+                "eventID": "XXXXXXXXXXXXXXXXXXXX",
+                "readOnly": "false",
+                "eventType": "AwsConsoleSignIn",
+                "managementEvent": "true",
+                "recipientAccountId": "XXXXXXXXXXXXXXXXXXXX",
+                "eventCategory": "Management"
+            }
+        },
+        {
+            "test_event_name": "unauthorized_operation",
+            "event": {
+                "eventVersion": "1.08",
+                "userIdentity": {
+                    "type": "AssumedRole",
+                    "principalId": "XXXXXXXXXXXXX",
+                    "arn": "arn:aws:sts::XXXXXXXXXXXXX:assumed-role/XXXXXXXXXXXXX/XXXXXXXXXXXXX",
+                    "accountId": "XXXXXXXXXXXXX",
+                    "accessKeyId": "XXXXXXXXXXXXX",
+                    "sessionContext": {
+                        "sessionIssuer": {
+                            "type": "Role",
+                            "principalId": "XXXXXXXXXXXXX",
+                            "arn": "arn:aws:iam::XXXXXXXXXXXXX:role/aws-reserved/XXXXXXXXXXXXX/XXXXXXXXXXXXX/XXXXXXXXXXXXX",
+                            "accountId": "XXXXXXXXXXXXX",
+                            "userName": "XXXXXXXXXXXXX"
+                        }
+                    }
+                },
+                "eventTime": "2000-01-03T16:14:51Z",
+                "eventSource": "ec2.amazonaws.com",
+                "eventName": "DescribeInstances",
+                "awsRegion": "eu-central-1",
+                "sourceIPAddress": "XXXXXXXXXXXXX",
+                "userAgent": "XXXXXXXXXXXXX/ec2.describe-instances",
+                "errorCode": "Client.UnauthorizedOperation",
+                "errorMessage": "You are not authorized to perform this operation.",
+                "requestParameters": {
+                    "instancesSet": {},
+                    "filterSet": {}
+                },
+                "responseElements": "null",
+                "requestID": "XXXXXXXXXXXXX",
+                "eventID": "XXXXXXXXXXXXX",
+                "readOnly": "true",
+                "eventType": "AwsApiCall",
+                "managementEvent": "true",
+                "recipientAccountId": "XXXXXXXXXXXXX",
+                "eventCategory": "Management"
+            }
+        },
+        {
+            "test_event_name": "access_denied",
+            "event": {
+                "eventVersion": "1.08",
+                "userIdentity": {
+                    "type": "AssumedRole",
+                    "principalId": "XXXXXXXXXXXXXXXXXXXX",
+                    "arn": "arn:aws:sts::XXXXXXXXXXXXXX:assumed-role/XXXXXXXXXXXXXXXXX/XXXXXXXXXXXXXXXXXXXXX",
+                    "accountId": "YYYYYYYYYYYYYYYYY",
+                    "accessKeyId": "XXXXXXXXXXXXXXXXX",
+                    "sessionContext": {
+                        "sessionIssuer": {
+                            "type": "Role",
+                            "principalId": "XXXXXXXXXXXXXXXXXXXX",
+                            "arn": "arn:aws:iam::XXXXXXXXX:role/XXXXXXXXXXXXX",
+                            "accountId": "XXXXXXXXXXXXXXX",
+                            "userName": "XXXXXXXXXXXXXXXXXXX"
+                        },
+                        "attributes": {
+                            "creationDate": "XXXXXXXXXXXXX",
+                            "mfaAuthenticated": "false"
+                        }
+                    }
+                },
+                "eventTime": "2000-01-03T16:14:51Z",
+                "eventSource": "health.amazonaws.com",
+                "eventName": "DescribeEventAggregates",
+                "awsRegion": "us-east-1",
+                "sourceIPAddress": "XXXXXXXXXXXXX",
+                "userAgent": "XXXXXXXXXXXXX",
+                "errorCode": "AccessDenied",
+                "errorMessage": "User: arn:aws:sts::XXXXXXXXXXXXX:assumed-role/XXXXXXXXXXXXX/XXXXXXXXXXXXX is not authorized to perform: health:DescribeEventAggregates on resource: * because no identity-based policy allows the health:DescribeEventAggregates action",
+                "requestParameters": "null",
+                "responseElements": "null",
+                "requestID": "XXXXXXXXXXXXX-0c20-4131-a6a7-XXXXXXXXXXXXX",
+                "eventID": "XXXXXXXXXXXXX-eab3-4bc7-ae06-XXXXXXXXXXXXX",
+                "readOnly": "true",
+                "eventType": "AwsApiCall",
+                "managementEvent": "true",
+                "recipientAccountId": "XXXXXXXXXXXXX",
+                "eventCategory": "Management",
+                "sessionCredentialFromConsole": "true"
+            }
+        },
+        {
+            "test_event_name": "UpdateFunctionCode",
+            "event":{
+                "eventVersion": "1.08",
+                "userIdentitytype": "AssumedRole",
+                "userIdentity": {
+                    "principalId": "-",
+                    "arn": "--",
+                    "accountId": "-",
+                    "accessKeyId": "-",
+                    "sessionContext": {
+                        "sessionIssuer": {
+                                "type": "Role",
+                                "principalId": "-",
+                                "arn": "--",
+                                "accountId": "-",
+                                "userName": "-"
+                            },
+                            "attributes": {
+                                "creationDate": "2023-07-03T18:07:02Z",
+                                "mfaAuthenticated": "false"
+                            }
+                    }
+                },
+                "eventTime": "2000-01-03T16:14:51Z",
+                "eventSource": "lambda.amazonaws.com",
+                "eventName": "UpdateFunctionCode20150331v2",
+                "awsRegion": "eu-central-1",
+                "sourceIPAddress": "-",
+                "userAgent": "-",
+                "requestParameters": {
+                    "fullyQualifiedArn": {
+                        "arnPrefix": {
+                            "partition": "aws",
+                            "region": "eu-central-1",
+                            "account": "-"
+                        },
+                        "relativeId": {
+                            "functionName": "fivexl-cloudtrail-to-slack"
+                        }
+                    },
+                    "functionName": "-",
+                    "publish": false,
+                    "dryRun": false
+                },
+                "responseElements": {
+                    "functionName": "fivexl-cloudtrail-to-slack",
+                    "functionArn": "-k",
+                    "runtime": "python3.10",
+                    "role": "arn:aws:iam::-:role/fivexl-cloudtrail-to-slack",
+                    "handler": "main.lambda_handler",
+                    "codeSize": 23383731,
+                    "description": "Send CloudTrail Events to Slack",
+                    "timeout": 30,
+                    "memorySize": 128,
+                    "lastModified": "2023-07-03T18:08:37.000+0000",
+                    "codeSha256": "-",
+                    "version": "$LATEST",
+                    "tracingConfig": {
+                        "mode": "PassThrough"
+                    },
+                    "revisionId": "-",
+                    "state": "Active",
+                    "lastUpdateStatus": "InProgress",
+                    "lastUpdateStatusReason": "The function is being created.",
+                    "lastUpdateStatusReasonCode": "Creating",
+                    "packageType": "Zip",
+                    "architectures": {"0": "x86_64"},
+                    "ephemeralStorage": {"size": 512},
+                    "snapStart": {
+                        "applyOn": "None",
+                        "optimizationStatus": "Off"
+                    },
+                    "runtimeVersionConfig": {
+                        "runtimeVersionArn": "-"
+                    }
+                },
+                "requestID": "-",
+                "eventID": "-",
+                "readOnly": false,
+                "eventType": "AwsApiCall",
+                "managementEvent": true,
+                "recipientAccountId": "-",
+                "eventCategory": "Management",
+                "tlsDetails": {
+                    "tlsVersion": "-",
+                    "cipherSuite": "-",
+                    "clientProvidedHostHeader": "lambda.eu-central-1.amazonaws.com"
+                }
+            }
+        },
+        {
+            "test_event_name": "UpdateFunctionConfiguration",
+            "event": {
+                "eventVersion": "1.08",
+                "userIdentity": {
+                    "type": "AssumedRole",
+                    "principalId": "",
+                    "arn": "-",
+                    "accountId": "-",
+                    "accessKeyId": "-",
+                    "sessionContext": {
+                        "sessionIssuer": {
+                            "type": "Role",
+                            "principalId": "-",
+                            "arn": "--",
+                            "accountId": "-",
+                            "userName": "-"
+                        },
+                        "webIdFederationData": {},
+                        "attributes": {
+                            "creationDate": "2023-07-04T06:53:06Z",
+                            "mfaAuthenticated": "false"
+                        }
+                    }
+                },
+                "eventTime": "2000-01-03T16:14:51Z",
+                "eventSource": "lambda.amazonaws.com",
+                "eventName": "UpdateFunctionConfiguration20150331v2",
+                "awsRegion": "-",
+                "sourceIPAddress": "-",
+                "userAgent": "-",
+                "requestParameters": {
+                    "functionName": "fivexl-cloudtrail-to-slack",
+                    "timeout": 10,
+                    "environment": {}
+                },
+                "responseElements": {
+                    "functionName": "fivexl-cloudtrail-to-slack",
+                    "functionArn": "-",
+                    "runtime": "python3.10",
+                    "role": "-",
+                    "handler": "main.lambda_handler",
+                    "codeSize": 23564916,
+                    "description": "Send CloudTrail Events to Slack",
+                    "timeout": 10,
+                    "memorySize": 128,
+                    "lastModified": "-",
+                    "codeSha256": "-",
+                    "version": "$LATEST",
+                    "environment": {},
+                    "tracingConfig": {
+                        "mode": "PassThrough"
+                    },
+                    "revisionId": "-",
+                    "state": "Active",
+                    "lastUpdateStatus": "InProgress",
+                    "lastUpdateStatusReason": "The function is being created.",
+                    "lastUpdateStatusReasonCode": "Creating",
+                    "packageType": "Zip",
+                    "architectures": [
+                        "x86_64"
+                    ],
+                    "ephemeralStorage": {
+                        "size": 512
+                    },
+                    "snapStart": {
+                        "applyOn": "None",
+                        "optimizationStatus": "Off"
+                    },
+                    "runtimeVersionConfig": {
+                        "runtimeVersionArn": "-"
+                    }
+                },
+                "requestID": "-",
+                "eventID": "-",
+                "readOnly": false,
+                "eventType": "AwsApiCall",
+                "managementEvent": true,
+                "recipientAccountId": "-",
+                "eventCategory": "Management"
+            }
+        }
+    ]
+}
+
