@@ -25,7 +25,7 @@ function_name = os.environ.get("FUNCTION_NAME", "fivexl-cloudtrail-to-slack")
 default_rules = []
 
 # Notify if someone logged in without MFA but skip notification for SSO logins
-default_rules.append('event["eventName"] == "ConsoleLogin" '
+default_rules.append('event.get("eventName", "") == "ConsoleLogin" '
                      'and event.get("additionalEventData.MFAUsed", "") != "Yes" '
                      'and "assumed-role/AWSReservedSSO" not in event.get("userIdentity.arn", "")')
 # Notify if someone is trying to do something they not supposed to be doing but do not notify
@@ -35,24 +35,24 @@ default_rules.append('event.get("errorCode", "").startswith(("AccessDenied"))'
                      'and (event.get("userIdentity.accountId", "") != "ANONYMOUS_PRINCIPAL")')
 # Notify about all non-read actions done by root
 default_rules.append('event.get("userIdentity.type", "") == "Root" '
-                     'and not event["eventName"].startswith(("Get", "List", "Describe", "Head"))')
+                     'and not event.get("eventName", "").startswith(("Get", "List", "Describe", "Head"))')
 default_rules.append('event.get("eventName", "") == "AttachUserPolicy" and "AdministratorAccess" in event.get("requestParameters.policyArn", "")')
 
 # Catch CloudTrail disable events
-default_rules.append('event["eventSource"] == "cloudtrail.amazonaws.com" '
-                     'and event["eventName"] == "StopLogging"')
-default_rules.append('event["eventSource"] == "cloudtrail.amazonaws.com" '
-                     'and event["eventName"] == "UpdateTrail"')
-default_rules.append('event["eventSource"] == "cloudtrail.amazonaws.com" '
-                     'and event["eventName"] == "DeleteTrail"')
+default_rules.append('event.get("eventSource", "") == "cloudtrail.amazonaws.com" '
+                     'and event.get("eventName", "") == "StopLogging"')
+default_rules.append('event.get("eventSource", "") == "cloudtrail.amazonaws.com" '
+                     'and event.get("eventName", "") == "UpdateTrail"')
+default_rules.append('event.get("eventSource", "") == "cloudtrail.amazonaws.com" '
+                     'and event.get("eventName", "") == "DeleteTrail"')
 
 
 # Catch cloudtrail to slack lambda changes
-default_rules.append('event["eventSource"] == "lambda.amazonaws.com" '
+default_rules.append('event.get("eventSource", "") == "lambda.amazonaws.com" '
                      'and "responseElements.functionName" in event '
                      f'and event["responseElements.functionName"] == "{function_name}" '
-                     'and event["eventName"].startswith(("UpdateFunctionConfiguration"))')
-default_rules.append('event["eventSource"] == "lambda.amazonaws.com" '
+                     'and event.get("eventName", "").startswith(("UpdateFunctionConfiguration"))')
+default_rules.append('event.get("eventSource", "") == "lambda.amazonaws.com" '
                      'and "responseElements.functionName" in event '
                      f'and event["responseElements.functionName"] == "{function_name}" '
-                     'and event["eventName"].startswith(("UpdateFunctionCode"))')
+                     'and event.get("eventName", "").startswith(("UpdateFunctionCode"))')
