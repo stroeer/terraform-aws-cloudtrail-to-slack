@@ -1,6 +1,8 @@
 from typing import List, Dict, Union
 import os
 import json
+import http.client
+import urllib3
 from rules import default_rules
 import logging
 from datetime import datetime
@@ -9,7 +11,7 @@ from dataclasses import dataclass
 
 @dataclass
 class SlackWebhookConfig:
-    default_hook_url: str
+    default_hook_url: str | None
     configuration: List[Dict]
 
 
@@ -19,15 +21,25 @@ class SlackAppConfig:
     default_channel_id: str
     configuration: List[Dict]
 
-def get_slack_config() -> Union[SlackWebhookConfig, SlackAppConfig]:
+http_client = urllib3.PoolManager()
 
-    if bot_token := os.environ.get("SLACK_BOT_TOKEN"):
+### Define function to retrieve values from extension local HTTP server cachce
+def retrieve_extension_value(url):
+    port = os.environ['PARAMETERS_SECRETS_EXTENSION_HTTP_PORT']
+    url = ('http://localhost:' + port + url)
+    headers = { "X-Aws-Parameters-Secrets-Token": os.environ.get('AWS_SESSION_TOKEN') }
+    response = http_client.request("GET", url, headers=headers)
+    response = json.loads(response.data)
+    return response
+
+
+def get_slack_config() -> Union[SlackWebhookConfig, SlackAppConfig]:
+    raw_configuration = retrieve_extension_value(('/systemsmanager/parameters/get/?name=' + os.environ.get('CONFIG_SSM_PARAMETER_NAME', 'None')))['Parameter']['Value']
+    bot_token = retrieve_extension_value(('/systemsmanager/parameters/get/?name=' + os.environ.get('SLACK_BOT_TOKEN_SSM_PARAMETER_NAME', 'None')))['Parameter']['Value']
+
+    if bot_token:
 
         default_channel_id: str | None = os.environ.get("DEFAULT_SLACK_CHANNEL_ID")
-        if not default_channel_id:
-            raise Exception("Environment variable DEFAULT_SLACK_CHANNEL_ID must be set.")
-
-        raw_configuration: str | None = os.environ.get("SLACK_APP_CONFIGURATION")
         configuration: List[Dict] = json.loads(raw_configuration) if raw_configuration else []
 
         return SlackAppConfig(
@@ -35,17 +47,6 @@ def get_slack_config() -> Union[SlackWebhookConfig, SlackAppConfig]:
             default_channel_id = default_channel_id,
             configuration = configuration,
         )
-
-    elif hook_url := os.environ.get("HOOK_URL"):
-
-        raw_configuration: str | None = os.environ.get("CONFIGURATION")
-        configuration: List[Dict]  = json.loads(raw_configuration) if raw_configuration else []
-
-        return SlackWebhookConfig(
-            default_hook_url = hook_url,
-            configuration = configuration,
-        )
-
     else:
         raise Exception("Environment variable HOOK_URL or SLACK_BOT_TOKEN must be set.")
 
@@ -54,8 +55,7 @@ class Config:
     def __init__(self): # noqa: ANN101 ANN204
 
         self.default_sns_topic_arn: str | None = os.environ.get("DEFAULT_SNS_TOPIC_ARN")
-        raw_sns_configuration: str = os.environ.get("SNS_CONFIGURATION", "")
-        self.sns_configuration: List[Dict] = json.loads(raw_sns_configuration) if raw_sns_configuration else[]
+        self.sns_topic_pattern: str | None = os.environ.get('SNS_TOPIC_PATTERN')
 
         self.rule_evaluation_errors_to_slack: bool = os.environ.get("RULE_EVALUATION_ERRORS_TO_SLACK") # type: ignore # noqa: PGH003, E501
         self.rules_separator: str = os.environ.get("RULES_SEPARATOR", ",")

@@ -25,21 +25,6 @@ variable "default_slack_hook_url" {
 # -------------------------------------------------------------------------------------------------------------------------
 # Slack App Configuration:
 
-variable "slack_bot_token" {
-  description = "The Slack bot token used for sending messages to Slack."
-  type        = string
-  default     = null
-}
-
-variable "slack_app_configuration" {
-  description = "Allows the configuration of the Slack app per account(s). This enables the separation of events from different accounts into different channels, which is useful in the context of an AWS organization."
-  type = list(object({
-    accounts         = list(string)
-    slack_channel_id = string
-  }))
-  default = null
-}
-
 variable "default_slack_channel_id" {
   description = "The Slack channel ID to be used if the AWS account ID does not match any account ID in the configuration variable."
   type        = string
@@ -81,6 +66,11 @@ variable "sns_configuration" {
     sns_topic_arn = string
   }))
   default = null
+}
+
+variable "sns_topic_pattern" {
+  description = "SNS topic pattern with 'ACCOUNT_ID' as a account id placeholder"
+  default     = null
 }
 
 # -------------------------------------------------------------------------------------------------------------------------
@@ -175,22 +165,10 @@ variable "log_level" {
   type        = string
 }
 
-variable "s3_removed_object_notification" {
-  description = "If object was removed from cloudtrail bucket, send notification to slack"
-  default     = true
-  type        = bool
-}
-
 variable "rule_evaluation_errors_to_slack" {
   description = "If rule evaluation error occurs, send notification to slack"
   default     = true
   type        = bool
-}
-
-variable "s3_notification_filter_prefix" {
-  description = "S3 notification filter prefix"
-  default     = "AWSLogs/"
-  type        = string
 }
 
 variable "dynamodb_table_name" {

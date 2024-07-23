@@ -1,8 +1,11 @@
 module "cloudtrail_to_slack_dynamodb_table" {
-  count   = var.slack_bot_token != null ? 1 : 0
   source  = "terraform-aws-modules/dynamodb-table/aws"
-  version = "3.3.0"
+  version = "4.0.1"
   name    = var.dynamodb_table_name
+
+  deletion_protection_enabled    = true
+  server_side_encryption_enabled = true
+  point_in_time_recovery_enabled = true
 
   hash_key           = "principal_structure_and_action_hash"
   ttl_attribute_name = "ttl"
@@ -15,6 +18,4 @@ module "cloudtrail_to_slack_dynamodb_table" {
     },
   ]
   tags = var.tags
-
 }
-

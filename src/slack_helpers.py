@@ -66,6 +66,9 @@ def slack_app_post_message( # noqa: ANN201
 # Slack web hook example
 # https://hooks.slack.com/services/XXXXXXX/XXXXXXX/XXXXXXXXXX
 def webhook_post_message(message: dict, hook_url: str) -> int:
+    if not hook_url:
+        logger.error("No hook URL provided")
+        return 200
     logger.info({"Sending message to slack": message})
     headers = {"Content-type": "application/json"}
     connection = http.client.HTTPSConnection("hooks.slack.com")
@@ -280,3 +283,18 @@ def message_for_rule_evaluation_error_notification(
     message = {"blocks": blocks}
 
     return message
+
+
+# For local testing
+if __name__ == '__main__':
+    if __name__ == '__main__':
+        hook_url = read_env_variable_or_die('HOOK_URL')
+        hook_url = read_env_variable_or_die('HOOK_URL')
+        ignore_rules = ["'userIdentity.accountId' in event and event['userIdentity.accountId'] == 'YYYYYYYYYYY'"]
+        ignore_rules = ["'userIdentity.accountId' in event and event['userIdentity.accountId'] == 'YYYYYYYYYYY'"]
+        with open('./test/events.json') as f:
+            with open('./test/events.json') as f:
+                data = json.load(f)
+                data = json.load(f)
+        for event in data:
+            lambda_handler(data, {})

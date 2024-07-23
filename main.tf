@@ -35,15 +35,14 @@ module "lambda" {
     {
       FUNCTION_NAME = var.function_name
 
-      HOOK_URL      = var.default_slack_hook_url
-      CONFIGURATION = try(jsonencode(var.configuration), "")
+      HOOK_URL = var.default_slack_hook_url
 
-      SLACK_BOT_TOKEN          = try(var.slack_bot_token, "")
-      SLACK_APP_CONFIGURATION  = try(jsonencode(var.slack_app_configuration), "")
+      CONFIG_SSM_PARAMETER_NAME          = aws_ssm_parameter.slack_config.name
+      SNS_TOPIC_PATTERN                  = var.sns_topic_pattern != "" ? var.sns_topic_pattern : "arn:aws:sns:${data.aws_region.current.name}:${local.placeholder}:cloudtrail-notifications"
+      SLACK_BOT_TOKEN_SSM_PARAMETER_NAME = aws_ssm_parameter.bot_token.name
+
       DEFAULT_SLACK_CHANNEL_ID = try(var.default_slack_channel_id, "")
-
-      DEFAULT_SNS_TOPIC_ARN = try(aws_sns_topic.events_to_sns[0].arn, var.default_sns_topic_arn, "")
-      SNS_CONFIGURATION     = try(jsonencode(var.sns_configuration), "")
+      DEFAULT_SNS_TOPIC_ARN    = try(aws_sns_topic.events_to_sns[0].arn, var.default_sns_topic_arn, "")
 
       RULES_SEPARATOR                 = var.rules_separator
       RULES                           = var.rules
@@ -53,7 +52,7 @@ module "lambda" {
       RULE_EVALUATION_ERRORS_TO_SLACK = var.rule_evaluation_errors_to_slack
 
       DYNAMODB_TIME_TO_LIVE = var.dynamodb_time_to_live
-      DYNAMODB_TABLE_NAME   = try(module.cloudtrail_to_slack_dynamodb_table[0].dynamodb_table_id, "")
+      DYNAMODB_TABLE_NAME   = module.cloudtrail_to_slack_dynamodb_table.dynamodb_table_id
     },
     var.use_default_rules ? { USE_DEFAULT_RULES = "True" } : {}
   )
@@ -71,11 +70,6 @@ module "lambda" {
   tags = var.tags
 }
 
-resource "aws_ssm_parameter" "config" {
-  name  = "/internal/lambda/cloudtrail-to-slack/config"
-  type  = "String"
-  value = jsonencode(var.configuration)
-}
 
 resource "aws_lambda_permission" "cloudwatch_logs" {
   action        = "lambda:InvokeFunction"
@@ -87,45 +81,32 @@ resource "aws_lambda_permission" "cloudwatch_logs" {
 resource "aws_cloudwatch_log_subscription_filter" "cloudwatch_logs_to_slack" {
   depends_on = [aws_lambda_permission.cloudwatch_logs]
 
-  name            = "chief-wiggum-subscription-filter"
+  name            = "${var.function_name}-subscription-filter"
   log_group_name  = data.aws_cloudwatch_log_group.logs.name
   filter_pattern  = ""
   destination_arn = module.lambda.lambda_function_arn
 }
 
 data "aws_partition" "current" {}
-resource "aws_iam_role_policy_attachment" "sns" {
-  policy_arn = aws_iam_policy.sns.arn
+
+resource "aws_iam_role_policy_attachment" "ssm" {
+  policy_arn = aws_iam_policy.ssm.arn
   role       = module.lambda.lambda_role_name
 }
 
-resource "aws_iam_policy" "sns" {
-  policy = data.aws_iam_policy_document.sns.json
+resource "aws_iam_policy" "ssm" {
+  policy = data.aws_iam_policy_document.ssm.json
 }
 
-data "aws_iam_policy_document" "sns" {
-  statement {
-    actions   = ["sns:Publish"]
-    resources = [replace(var.sns_topic_pattern, "ACCOUNT_ID", "*")]
-  }
+data "aws_iam_policy_document" "ssm" {
 
   statement {
     actions   = ["ssm:GetParameter"]
-    resources = [aws_ssm_parameter.config.arn]
+    resources = [aws_ssm_parameter.slack_config.arn, aws_ssm_parameter.bot_token.arn]
   }
 }
+
 data "aws_iam_policy_document" "s3" {
-  statement {
-    sid = "AllowLambdaToGetObjects"
-
-    actions = [
-      "s3:GetObject",
-    ]
-
-    resources = [
-      "${data.aws_s3_bucket.cloudtrail.arn}/*",
-    ]
-  }
   statement {
     sid = "AllowLambdaToInteractWithDynamoDB"
 
@@ -166,56 +147,4 @@ data "aws_iam_policy_document" "s3" {
       ]
     }
   }
-
-  dynamic "statement" {
-    for_each = var.cloudtrail_logs_kms_key_id != "" ? { create = true } : {}
-    content {
-      sid = "AllowLambdaToUseKMSKey"
-
-      actions = [
-        "kms:Decrypt",
-        "kms:GenerateDataKey",
-      ]
-
-      resources = [
-        data.aws_kms_key.cloudtrail[0].arn,
-      ]
-    }
-  }
-
-}
-
-data "aws_kms_key" "cloudtrail" {
-  count  = var.cloudtrail_logs_kms_key_id != "" ? 1 : 0
-  key_id = var.cloudtrail_logs_kms_key_id
-}
-
-data "aws_s3_bucket" "cloudtrail" {
-  bucket = var.cloudtrail_logs_s3_bucket_name
-}
-
-data "aws_caller_identity" "current" {}
-
-data "aws_region" "current" {}
-
-resource "aws_lambda_permission" "s3" {
-  statement_id   = "AllowExecutionFromS3Bucket"
-  action         = "lambda:InvokeFunction"
-  function_name  = module.lambda.lambda_function_name
-  principal      = "s3.amazonaws.com"
-  source_arn     = data.aws_s3_bucket.cloudtrail.arn
-  source_account = data.aws_caller_identity.current.account_id
-}
-
-resource "aws_s3_bucket_notification" "bucket_notification" {
-  bucket = data.aws_s3_bucket.cloudtrail.id
-
-  lambda_function {
-    lambda_function_arn = module.lambda.lambda_function_arn
-    events              = var.s3_removed_object_notification ? ["s3:ObjectCreated:*", "s3:ObjectRemoved:*"] : ["s3:ObjectCreated:*"]
-    filter_prefix       = var.s3_notification_filter_prefix
-    filter_suffix       = ".json.gz"
-  }
-
-  depends_on = [aws_lambda_permission.s3]
 }

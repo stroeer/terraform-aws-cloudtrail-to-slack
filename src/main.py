@@ -16,6 +16,9 @@
 # under the License.
 import gzip
 import json
+import base64
+import os
+import sys
 import urllib
 from typing import Any, Dict, List, NamedTuple
 
@@ -40,26 +43,15 @@ dynamodb_client = boto3.client("dynamodb")
 sns_client = boto3.client("sns")
 
 
-def lambda_handler(s3_notification_event: Dict[str, List[Any]], _) -> int:  # noqa: ANN001
-
-    try:
-        for record in s3_notification_event["Records"]:
-            event_name: str = record["eventName"]
-            if "Digest" in record["s3"]["object"]["key"]:
-                return 200
-
-            if event_name.startswith("ObjectRemoved"):
-                handle_removed_object_record(
-                    record = record,
-                )
-                continue
-
-            elif event_name.startswith("ObjectCreated"):
-                handle_created_object_record(
-                    record = record,
-                    cfg = cfg,
-                )
-                continue
+def lambda_handler(event, context) -> int:  # noqa: ANN001
+    records = get_cloudtrail_log_records(event)
+    for record in records:
+        handle_event(
+            event = record["event"],
+            source_file_object_key = record['key'],
+            rules = cfg.rules,
+            ignore_rules = cfg.ignore_rules
+        )
 
     except Exception as e:
         post_message(
@@ -71,59 +63,23 @@ def lambda_handler(s3_notification_event: Dict[str, List[Any]], _) -> int:  # no
     return 200
 
 
-def handle_removed_object_record(
-        record: dict,
-) -> None:
-    logger.info({"s3:ObjectRemoved event": record})
-    account_id = record["userIdentity"]["accountId"] if "accountId" in record["userIdentity"] else ""
-    message = event_to_slack_message(
-        event = record,
-        source_file = record["s3"]["object"]["key"],
-        account_id_from_event = account_id,
-    )
-    post_message(message = message, account_id = account_id, slack_config = slack_config)
 
+def get_cloudtrail_log_records(event) -> Dict | None:
+    cw_data = event['awslogs']['data']
+    compressed_payload = base64.b64decode(cw_data)
+    uncompressed_payload = gzip.decompress(compressed_payload)
+    payload = json.loads(uncompressed_payload)
 
-def handle_created_object_record(
-        record: dict,
-        cfg: Config,
-) -> None:
-    logger.debug({"s3_notification_event": record})
-    cloudtrail_log_record = get_cloudtrail_log_records(record)
-    if cloudtrail_log_record:
-        for cloudtrail_log_event in cloudtrail_log_record["events"]:
-            handle_event(
-                event = cloudtrail_log_event,
-                source_file_object_key = cloudtrail_log_record["key"],
-                rules = cfg.rules,
-                ignore_rules = cfg.ignore_rules
-            )
-
-
-def get_cloudtrail_log_records(record: Dict) -> Dict | None:
-    # Get all the files from S3 so we can process them
-
-    # In case if we get something unexpected
-    if "s3" not in record:
-        raise AssertionError(f"recieved record does not contain s3 section: {record}")
-    bucket = record["s3"]["bucket"]["name"]
-    key = urllib.parse.unquote_plus(record["s3"]["object"]["key"], encoding="utf-8") # type: ignore # noqa: PGH003, E501
-    # Do not process digest files
-    try:
-        response = s3_client.get_object(Bucket=bucket, Key=key)
-        with gzip.GzipFile(fileobj=response["Body"]) as gzipfile:
-            content = gzipfile.read()
-        content_as_json = json.loads(content.decode("utf8"))
-        cloudtrail_log_record = {
-            "key": key,
-            "events": content_as_json["Records"],
-        }
-
-    except Exception as e:
-        logger.exception({"Error getting object": {"key": key, "bucket": bucket, "error": e}})
-        raise e
-    return cloudtrail_log_record
-
+    log_events = payload['logEvents']
+    for log_event in log_events:
+        records.append(
+            {
+                'key': payload['logGroup'],
+                'accountId': payload['owner'],
+                'event': json.loads(log_event['message']),
+            }
+        )
+    return records
 
 class ProcessingResult(NamedTuple):
     should_be_processed: bool
@@ -135,7 +91,7 @@ def should_message_be_processed(
     rules: List[str],
     ignore_rules: List[str],
 ) -> ProcessingResult:
-    flat_event = flatten_json(event)
+    flat_event = {k: v for k, v in flat_event.items() if v is not None}
     user = event["userIdentity"]
     event_name = event["eventName"]
     logger.debug({"Rules:": rules, "ignore_rules": ignore_rules})
@@ -172,7 +128,7 @@ def handle_event(
 ) -> SlackResponse | None:
 
     result = should_message_be_processed(event, rules, ignore_rules)
-    account_id = event["userIdentity"]["accountId"] if "accountId" in event["userIdentity"] else""
+    account_id = event["recipientAccountId"] if "recipientAccountId" in event else ""
     if cfg.rule_evaluation_errors_to_slack:
         for error in result.errors:
             post_message(
