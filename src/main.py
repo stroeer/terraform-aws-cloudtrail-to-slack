@@ -101,8 +101,6 @@ def should_message_be_processed(
 ) -> ProcessingResult:
     flat_event = flatten_json(event)
     flat_event = {k: v for k, v in flat_event.items() if v is not None}
-    user = event["userIdentity"]
-    event_name = event["eventName"]
     logger.debug({"Rules:": rules, "ignore_rules": ignore_rules})
     logger.debug({"Flattened event": flat_event})
 
@@ -125,7 +123,7 @@ def should_message_be_processed(
             logger.exception({"Event parsing failed": {"error": e, "rule": rule, "flat_event": flat_event}})
             errors.append({"error": e, "rule": rule})
 
-    logger.info({"Event did not match any rules and will not be processed": {"event": event_name, "user": user}}) # noqa: E501
+    logger.info({"Event did not match any rules and will not be processed": {"event": flat_event}}) # noqa: E501
     return ProcessingResult(False, errors)
 
 
