@@ -56,21 +56,16 @@ check-git-branch: check-git-clean
 	git checkout master
 
 release: check-git-branch bump documentation
+	@if ! gh auth status > /dev/null 2>&1; then \
+		echo "GitHub CLI not authenticated. Please run 'gh auth login'."; \
+		exit 1; \
+	fi
 	git add README.md docs/part1.md
 	git commit -vsam "Bump version to $(NEXT_TAG)" || true
 	git tag -a $(NEXT_TAG) -m "$(NEXT_TAG)"
 	git push origin $(NEXT_TAG)
 	git push
-	# create GH release if GITHUB_TOKEN is set
-	if [ ! -z "${GITHUB_TOKEN}" ] ; then 												\
-    	curl 																		\
-    		-H "Authorization: token ${GITHUB_TOKEN}" 								\
-    		-X POST 																\
-    		-H "Accept: application/vnd.github.v3+json"								\
-    		https://api.github.com/repos/stroeer/terraform-aws-cloudtrail-to-slack/releases \
-    		-d "{\"tag_name\":\"$(NEXT_TAG)\",\"generate_release_notes\":true, \"name\": \"$(NEXT_RELEASE_NAME)\"}"; 									\
-	fi;
-
+	gh release create $(NEXT_TAG) README.md docs/part1.md --title "$(NEXT_RELEASE_NAME)" --notes "Release $(NEXT_RELEASE_NAME)"
 
 help: ## Display this help screen
 	@grep -E '^[0-9a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'	
