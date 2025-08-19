@@ -19,7 +19,7 @@
 | Name | Source | Version |
 |------|--------|---------|
 | <a name="module_cloudtrail_to_slack_dynamodb_table"></a> [cloudtrail\_to\_slack\_dynamodb\_table](#module\_cloudtrail\_to\_slack\_dynamodb\_table) | terraform-aws-modules/dynamodb-table/aws | 4.0.1 |
-| <a name="module_lambda"></a> [lambda](#module\_lambda) | terraform-aws-modules/lambda/aws | 4.18.0 |
+| <a name="module_lambda"></a> [lambda](#module\_lambda) | terraform-aws-modules/lambda/aws | 8.0.1 |
 
 ## Resources
 
