@@ -61,7 +61,7 @@ module "lambda" {
     var.use_default_rules ? { USE_DEFAULT_RULES = "True" } : {}
   )
   layers = [
-    "arn:aws:lambda:eu-west-1:015030872274:layer:AWS-Parameters-and-Secrets-Lambda-Extension:11"
+    "arn:aws:lambda:eu-west-1:015030872274:layer:AWS-Parameters-and-Secrets-Lambda-Extension:96"
   ]
 
   memory_size = var.lambda_memory_size
