@@ -1,38 +1,28 @@
-[tool.poetry]
+[project]
 name = "terraform-aws-cloudtrail-to-slack"
-version = "3.2.2"
+version = "3.3.0"
 description = "Parse AWS CloudTrail events and send alerts to Slack for events that match pre-configured rules"
-authors = ["FivexL"]
+authors = [{ name = "FivexL" }, { name = "Stroeer" }]
 readme = "README.md"
+# ponytail: keep in sync with the Lambda runtime in main.tf
+requires-python = ">=3.13,<3.14"
+dependencies = ["slack-sdk>=3.36"]
 
-[tool.poetry.dependencies]
-python = "3.10.10"
-slack-sdk = "^3.21.3"
-
-# Full list of dependencies, for development.
-# Can be installed with `poetry install --with dev`.
-[tool.poetry.group.dev.dependencies]
-python = "^3.10.10"
-pytest = ">=7.2.2,<10.0.0"
-black = ">=24.3,<27.0"
-boto3 = "^1.26.97"
-ruff = "^0.0.267"
-slack-sdk = "^3.21.3"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.black]
-line-length = 140
+# boto3 ships with the Lambda runtime, so it is dev-only.
+[dependency-groups]
+dev = ["boto3", "pytest", "ruff"]
 
 [tool.ruff]
+line-length = 140
+target-version = "py313"
+
+[tool.ruff.lint]
 select = [
   # pyflakes
   "F",
   # flake8-annotations
   "ANN",
-  # flake8-unused-arguments 
+  # flake8-unused-arguments
   "ARG",
   # pycodestyle
   "E", "W",
@@ -63,45 +53,10 @@ select = [
 ]
 ignore = []
 
-# Allow autofix for all enabled rules (when `--fix`) is provided.
-fixable = ["A", "B", "C", "D", "E", "F", "G", "I", "N", "Q", "S", "T", "W", "ANN", "ARG", "BLE", "COM", "DJ", "DTZ", "EM", "ERA", "EXE", "FBT", "ICN", "INP", "ISC", "NPY", "PD", "PGH", "PIE", "PL", "PT", "PTH", "PYI", "RET", "RSE", "RUF", "SIM", "SLF", "TCH", "TID", "TRY", "UP", "YTT"]
-unfixable = []
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ISC004", "PGH003", "PLC0415"]
 
-# Exclude a variety of commonly ignored directories.
-exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
-    ".git",
-    ".git-rewrite",
-    ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".pytype",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    "__pypackages__",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
-    "node_modules",
-    "venv",
-]
-
-# Same as Black.
-line-length = 140
-
-# Allow unused variables when underscore-prefixed.
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-
-# Assume Python 3.10.
-target-version = "py310"
-
-[tool.ruff.mccabe]
+[tool.ruff.lint.mccabe]
 # Unlike Flake8, default to a complexity level of 10.
 max-complexity = 10
 
@@ -111,6 +66,6 @@ reportGeneralTypeIssues = true
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q"
-testpaths = ["src/tests"]
+testpaths = ["tests"]
 xfail_strict = true
 filterwarnings = []

@@ -8,11 +8,11 @@ def pytest_sessionstart(session):  # noqa: ANN201, ARG001, ANN001
         "RULES_SEPARATOR": "x",
         "RULES": "x",
         "IGNORE_RULES": "x",
-        "USE_DEFAULT_RULES": "x",
+        "USE_DEFAULT_RULES": "true",
         "EVENTS_TO_TRACK": "x",
         "CONFIGURATION": "[{}]",
         "LOG_LEVEL": "DEBUG",
-        "RULE_EVALUATION_ERRORS_TO_SLACK": "x",
+        "RULE_EVALUATION_ERRORS_TO_SLACK": "true",
     }
     os.environ |= mock_env
     boto3.setup_default_session(region_name="us-east-1")

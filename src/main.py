@@ -14,17 +14,15 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+import base64
 import gzip
 import json
-import base64
-import os
-import sys
-import urllib
 from typing import Any, Dict, List, NamedTuple
 
 import boto3
 from config import Config, SlackAppConfig, SlackWebhookConfig, get_logger, get_slack_config
 from dynamodb import get_thread_ts_from_dynamodb, put_event_to_dynamodb
+from rule_evaluator import evaluate_rule
 from slack_helpers import (
     event_to_slack_message,
     message_for_rule_evaluation_error_notification,
@@ -42,52 +40,46 @@ s3_client = boto3.client("s3")
 dynamodb_client = boto3.client("dynamodb")
 sns_client = boto3.client("sns")
 
-def slack_config_cached():
-    global slack_config
+
+def slack_config_cached():  # noqa: ANN201
+    global slack_config  # noqa: PLW0603
     if not slack_config:
         slack_config = get_slack_config()
     return slack_config
 
-def lambda_handler(event, context) -> int:
-    # noqa: ANN001
+
+def lambda_handler(event, context) -> int:  # noqa: ANN001, ARG001
     records = get_cloudtrail_log_records(event)
-    try:
-        for record in records:
+    # One failing record must not swallow the alerts for the rest of the batch.
+    for record in records:
+        try:
             handle_event(
                 event = record["event"],
-                source_file_object_key = record['key'],
+                source_file_object_key = record["key"],
                 rules = cfg.rules,
-                ignore_rules = cfg.ignore_rules
+                ignore_rules = cfg.ignore_rules,
             )
-
-    except Exception as e:
-        logger.exception({"Failed to process event": e})
-        post_message(
-            message = message_for_slack_error_notification(e, event),
-            account_id = None,
-            slack_config = slack_config_cached(),
-        )
+        except Exception as e:
+            logger.exception({"Failed to process event": str(e)})
+            post_message(
+                message = message_for_slack_error_notification(e, record),
+                account_id = None,
+                slack_config = slack_config_cached(),
+            )
     return 200
 
 
+def get_cloudtrail_log_records(event: dict) -> List[Dict[str, Any]]:
+    payload = json.loads(gzip.decompress(base64.b64decode(event["awslogs"]["data"])))
+    return [
+        {
+            "key": payload["logGroup"],
+            "accountId": payload["owner"],
+            "event": json.loads(log_event["message"]),
+        }
+        for log_event in payload["logEvents"]
+    ]
 
-def get_cloudtrail_log_records(event) -> Dict | None:
-    records = []
-    cw_data = event['awslogs']['data']
-    compressed_payload = base64.b64decode(cw_data)
-    uncompressed_payload = gzip.decompress(compressed_payload)
-    payload = json.loads(uncompressed_payload)
-
-    log_events = payload['logEvents']
-    for log_event in log_events:
-        records.append(
-            {
-                'key': payload['logGroup'],
-                'accountId': payload['owner'],
-                'event': json.loads(log_event['message']),
-            }
-        )
-    return records
 
 class ProcessingResult(NamedTuple):
     should_be_processed: bool
@@ -107,7 +99,7 @@ def should_message_be_processed(
     errors = []
     for ignore_rule in ignore_rules:
         try:
-            if eval(ignore_rule, {}, {"event": flat_event}) is True: # noqa: PGH001
+            if evaluate_rule(ignore_rule, flat_event) is True:
                 logger.info({"Event matched ignore rule and will not be processed": {"ignore_rule": ignore_rule, "flat_event": flat_event}}) # noqa: E501
                 return ProcessingResult(False, errors)
         except Exception as e:
@@ -116,7 +108,7 @@ def should_message_be_processed(
 
     for rule in rules:
         try:
-            if eval(rule, {}, {"event": flat_event}) is True: # noqa: PGH001
+            if evaluate_rule(rule, flat_event) is True:
                 logger.info({"Event matched rule and will be processed": {"rule": rule, "flat_event": flat_event}}) # noqa: E501
                 return ProcessingResult(True, errors)
         except Exception as e:
@@ -135,7 +127,7 @@ def handle_event(
 ) -> SlackResponse | None:
 
     result = should_message_be_processed(event, rules, ignore_rules)
-    account_id = event["recipientAccountId"] if "recipientAccountId" in event else ""
+    account_id = event.get("recipientAccountId", "")
     if cfg.rule_evaluation_errors_to_slack:
         for error in result.errors:
             post_message(
@@ -160,7 +152,6 @@ def handle_event(
 
     send_message_to_sns(
         event = event,
-        source_file = source_file_object_key,
         account_id = account_id,
         cfg = cfg,
         sns_client = sns_client,
@@ -190,14 +181,14 @@ def handle_event(
             )
         else:
             # If we don't have a thread_ts, we need to post the message to the channel
-            logger.info({"Posting message to channel"})
+            logger.info("Posting message to channel")
             slack_response = post_message(
                 message = message,
                 account_id = account_id,
                 slack_config = slack_config_cached()
             )
             if slack_response is not None:
-                logger.info({"Saving thread_ts to DynamoDB"})
+                logger.info("Saving thread_ts to DynamoDB")
                 thread_ts = slack_response.get("ts")
                 if thread_ts is not None:
                     put_event_to_dynamodb(
@@ -227,38 +218,3 @@ def flatten_json(y: dict) -> dict:
 
     flatten(y)
     return out
-
-# For local testing
-if __name__ == "__main__":
-    #Before running this script, set environment variables below
-    #On top of this file add region to boto3 clients
-    #and remove cfg = Config() slack_config = get_slack_config() from top of this file.
-    import os
-    os.environ["SLACK_BOT_TOKEN"] = ""
-    os.environ["DEFAULT_SLACK_CHANNEL_ID"] = ""
-    os.environ["SLACK_APP_CONFIGURATION"] = ""
-
-    os.environ["DYNAMODB_TABLE_NAME"] = ""
-    os.environ["DYNAMODB_TIME_TO_LIVE"] = ""
-
-    os.environ["HOOK_URL"] = ""
-    os.environ["CONFIGURATION"] = ""
-
-    os.environ["RULE_EVALUATION_ERRORS_TO_SLACK"] = ""
-    os.environ["RULES_SEPARATOR"] = ","
-    os.environ["RULES"] = ""
-    os.environ["IGNORE_RULES"] = ""
-    os.environ["USE_DEFAULT_RULES"] = ""
-    os.environ["EVENTS_TO_TRACK"] = ""
-    os.environ["LOG_LEVEL"] = ""
-    os.environ["DEFAULT_SNS_TOPIC_ARN"] = ""
-    os.environ["SNS_CONFIGURATION"] = '[{""}]'
-
-
-    cfg = Config()
-    slack_config = get_slack_config()
-
-    with open("./tests/test_events.json") as f:
-        data = json.load(f)
-    for event in data["test_events"]:
-        handle_event(event["event"], "file_name", cfg.rules, cfg.ignore_rules)

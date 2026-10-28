@@ -36,7 +36,8 @@ default_rules.append('event.get("errorCode", "").startswith(("AccessDenied"))'
 # Notify about all non-read actions done by root
 default_rules.append('event.get("userIdentity.type", "") == "Root" '
                      'and not event.get("eventName", "").startswith(("Get", "List", "Describe", "Head"))')
-default_rules.append('event.get("eventName", "") == "AttachUserPolicy" and "AdministratorAccess" in event.get("requestParameters.policyArn", "")')
+default_rules.append('event.get("eventName", "") == "AttachUserPolicy" '
+                     'and "AdministratorAccess" in event.get("requestParameters.policyArn", "")')
 
 # Catch CloudTrail disable events
 default_rules.append('event.get("eventSource", "") == "cloudtrail.amazonaws.com" '
