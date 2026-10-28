@@ -1,17 +1,13 @@
 import json
-from typing import Any
 
 import config
 from config import get_logger
-import os
-from dateutil.parser import parse as parse_date
 
 logger = get_logger()
 
 
 def send_message_to_sns(
     event: dict,
-    source_file: str,
     account_id: str | None,
     cfg: config.Config,
     sns_client # noqa: ANN001
@@ -21,7 +17,7 @@ def send_message_to_sns(
         attributes = {}
         for key, value in event.items():
             if isinstance(value, str):
-                attributes[key] = {'DataType': 'String', 'StringValue': str(value)}
+                attributes[key] = {"DataType": "String", "StringValue": str(value)}
         message = json.dumps(event)
 
         logger.debug(f"SNS Message: {message}")
@@ -32,7 +28,7 @@ def send_message_to_sns(
                 TargetArn=topic_arn,
                 Message=json.dumps(event),
                 MessageAttributes=attributes
-            )['ResponseMetadata']['HTTPStatusCode']
+            )["ResponseMetadata"]["HTTPStatusCode"]
         except Exception as e:
             logger.info(f"Topic {topic_arn}: {e}")
             if "NotFound" in str(e) or "AuthorizationError" in str(e):

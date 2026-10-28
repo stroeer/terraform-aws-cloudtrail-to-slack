@@ -3,7 +3,7 @@ locals {
 }
 module "lambda" {
   source  = "terraform-aws-modules/lambda/aws"
-  version = "8.0.1"
+  version = "8.12.0"
 
   function_name = var.function_name
   description   = "Send CloudTrail Events to Slack"
@@ -25,6 +25,9 @@ module "lambda" {
         "!tests/.*",
         "!tools/.*",
         "!.pytest_cache/.*",
+        "!.ruff_cache/.*",
+        "!uv.lock",
+        "!pyproject.toml",
       ]
     }
   ]
@@ -40,7 +43,7 @@ module "lambda" {
       PARAMETERS_SECRETS_EXTENSION_HTTP_PORT = "2273"
 
       CONFIG_SSM_PARAMETER_NAME          = aws_ssm_parameter.slack_config.name
-      SNS_TOPIC_PATTERN                  = var.sns_topic_pattern != "" ? var.sns_topic_pattern : "arn:aws:sns:${data.aws_region.current.name}:${local.placeholder}:cloudtrail-notifications"
+      SNS_TOPIC_PATTERN                  = var.sns_topic_pattern != "" ? var.sns_topic_pattern : "arn:aws:sns:${data.aws_region.current.region}:${local.placeholder}:cloudtrail-notifications"
       SLACK_BOT_TOKEN_SSM_PARAMETER_NAME = aws_ssm_parameter.bot_token.name
 
       CONFIG_HASH = sha1(jsonencode(var.configuration))
